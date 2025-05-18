@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Currency Converter with Flags</title>
+  <style>
+    /* Reset and base styles */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f9f5f0;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      color: #5a4a3c;
+    }
+    .converter-container {
+      background: #fff8f0;
+      border-radius: 15px;
+      padding: 40px 35px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 8px 25px rgba(133, 94, 66, 0.2);
+      transition: transform 0.3s ease;
+    }
+    .converter-container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(133, 94, 66, 0.3);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #7e6651;
+      letter-spacing: 1px;
+    }
+    label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #8c7b6b;
+      display: block;
+      margin-bottom: 8px;
+      margin-top: 20px;
+      user-select: none;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 14px 18px;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: 2px solid #d8cfc2;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      outline-offset: 2px;
+      color: #5a4a3c;
+      background-color: #fff8f0;
+      -moz-appearance: textfield;
+      -webkit-appearance: none; 
+       appearance: none;
+    }
+    input[type="number"]::-webkit-inner-spin-button, 
+    input[type="number"]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    .btn-primary, .btn-swap {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 14px 0;
+      margin-top: 25px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+      box-shadow: 0 5px 15px rgba(176, 140, 90, 0.3);
+      user-select: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-primary:disabled {
+      background: #d1c8ba;
+      cursor: not-allowed;
+      box-shadow: none;
+      color: #8c7b6b;
+    }
+    .btn-primary {
+      background: #b08c5a;
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #a17f3f;
+      box-shadow: 0 8px 20px rgba(161, 127, 63, 0.6);
+    }
+    .btn-swap {
+      background: #f4e8d3;
+      color: #7e6651;
+      font-size: 1.05rem;
+      margin-top: 15px;
+      box-shadow: none;
+    }
+    .btn-swap:hover {
+      background: #e8dcb8;
+      box-shadow: 0 5px 15px rgba(176, 140, 90, 0.15);
+    }
+    .btn-swap.rotating {
+      animation: rotate 0.6s ease;
+    }
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(180deg); }
+      100% { transform: rotate(360deg); }
+    }
+    #result {
+      margin-top: 30px;
+      font-weight: 700;
+      font-size: 1.3rem;
+      text-align: center;
+      min-height: 40px;
+      color: #7e6651;
+      word-wrap: break-word;
+      user-select: none;
+      min-height: 50px;
+    }
+    #result.loading::after {
+      content: ' ⏳';
+      animation: blink 1.2s infinite;
+    }
+    #result.error {
+      color: #c75c5c;
+      font-style: italic;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    #lastUpdated {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #a3927d;
+      user-select: none;
+    }
+
+    /* Custom dropdown container */
+    .custom-select-container {
+      position: relative;
+      user-select: none;
+      width: 100%;
+    }
+    .custom-select {
+      border: 2px solid #d8cfc2;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 1rem;
+      background: #fff8f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #5a4a3c;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .custom-select:focus, .custom-select.open {
+      border-color: #b08c5a;
+      box-shadow: 0 0 10px rgba(176, 140, 90, 0.5);
+      outline: none;
+      background-color: #fff3d9;
+    }
+    .custom-select .selected-flag {
+      width: 28px;
+      height: 20px;
+      margin-right: 10px;
+      background-size: cover;
+      flex-shrink: 0;
+      border-radius: 3px;
+      box-shadow: 0 0 3px rgba(0,0,0,0.2);
+    }
+    .custom-select .selected-text {
+      flex-grow: 1;
+      font-weight: 600;
+    }
+    .custom-select .arrow {
+      font-size: 1.2rem;
+      user-select: none;
+      transform: rotate(0deg);
+      transition: transform 0.3s ease;
+    }
+    .custom-select.open .arrow {
+      transform: rotate(180deg);
+    }
+
+    .options-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 180px;
+      overflow-y: auto;
+      border: 2px solid #d8cfc2;
+      border-top: none;
+      background: #fff8f0;
+      border-radius: 0 0 10px 10px;
+      z-index: 10;
+      display: none;
+    }
+    .options-list.open {
+      display: block;
+    }
+    .option-item {
+      padding: 10px 15px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      color: #5a4a3c;
+      transition: background-color 0.2s ease;
+    }
+    .option-item:hover, .option-item.selected {
+      background-color: #f4e8d3;
+    }
+    .option-flag {
+      width: 24px;
+      height: 16px;
+      background-size: cover;
+      margin-right: 10px;
+      border-radius: 3px;
+      box-shadow: 0 0 3px rgba(0,0,0,0.15);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="converter-container" role="main" aria-label="Currency converter">
+    <h2>Currency Converter</h2>
+
+    <label for="fromCurrency" id="fromLabel">From:</label>
+    <div class="custom-select-container" tabindex="0" aria-labelledby="fromLabel" id="fromCurrencyContainer"></div>
+
+    <label for="toCurrency" id="toLabel">To:
+
+    </label>
+<div class="custom-select-container" tabindex="0" aria-labelledby="toLabel" id="toCurrencyContainer"></div>
+<label for="amountInput">Amount:</label>
+<input
+  id="amountInput"
+  type="number"
+  min="0"
+  step="any"
+  value="1"
+  aria-labelledby="amountLabel"
+  aria-describedby="amountDesc"
+  autocomplete="off"
+/>
+<div id="amountDesc" style="display:none">Enter the amount to convert</div>
+
+<button class="btn-swap" type="button" aria-label="Swap currencies" id="swapBtn">🔄 Swap</button>
+<button class="btn-primary" id="convertBtn" type="button" aria-label="Convert currency">Convert</button>
+
+<div id="result" aria-live="polite" aria-atomic="true"></div>
+<div id="lastUpdated"></div>
+</div>
+<script>
+// Countries and flags object
+
+// Countries and flags object
+const countries = {
+  "USD": "https://flagcdn.com/us.svg",
+  "EUR": "https://flagcdn.com/eu.svg",
+  "JPY": "https://flagcdn.com/jp.svg",
+  "GBP": "https://flagcdn.com/gb.svg",
+  "AUD": "https://flagcdn.com/au.svg",
+  "CAD": "https://flagcdn.com/ca.svg",
+  "CHF": "https://flagcdn.com/ch.svg",
+  "CNY": "https://flagcdn.com/cn.svg",
+  "INR": "https://flagcdn.com/in.svg",
+  "SGD": "https://flagcdn.com/sg.svg",
+  "KRW": "https://flagcdn.com/kr.svg",
+  "NZD": "https://flagcdn.com/nz.svg"
+};
+
+// Default selections
+let fromCurrency = "USD";
+let toCurrency = "INR";
+
+// Get DOM elements
+const fromContainer = document.getElementById("fromCurrencyContainer");
+const toContainer = document.getElementById("toCurrencyContainer");
+const amountInput = document.getElementById("amountInput");
+const swapBtn = document.getElementById("swapBtn");
+const convertBtn = document.getElementById("convertBtn");
+const resultDiv = document.getElementById("result");
+const lastUpdatedDiv = document.getElementById("lastUpdated");
+
+// Create dropdown
+function createCustomSelect(container, selectedCurrency, onSelect) {
+  container.innerHTML = "";
+
+  const select = document.createElement("div");
+  select.className = "custom-select";
+  select.tabIndex = 0;
+
+  const flag = document.createElement("div");
+  flag.className = "selected-flag";
+  flag.style.backgroundImage = `url(${countries[selectedCurrency]})`;
+
+  const text = document.createElement("span");
+  text.className = "selected-text";
+  text.textContent = selectedCurrency;
+
+  const arrow = document.createElement("span");
+  arrow.className = "arrow";
+  arrow.innerHTML = "▼";
+
+  select.appendChild(flag);
+  select.appendChild(text);
+  select.appendChild(arrow);
+  container.appendChild(select);
+
+  const optionsList = document.createElement("div");
+  optionsList.className = "options-list";
+
+  Object.entries(countries).forEach(([code, flagUrl]) => {
+    const option = document.createElement("div");
+    option.className = "option-item";
+    if (code === selectedCurrency) option.classList.add("selected");
+
+    const optionFlag = document.createElement("div");
+    optionFlag.className = "option-flag";
+    optionFlag.style.backgroundImage = `url(${flagUrl})`;
+
+    const optionText = document.createElement("span");
+    optionText.textContent = code;
+
+    option.appendChild(optionFlag);
+    option.appendChild(optionText);
+
+    option.addEventListener("click", () => {
+      onSelect(code);
+      createCustomSelect(container, code, onSelect);
+    });
+
+    optionsList.appendChild(option);
+  });
+
+  container.appendChild(optionsList);
+
+  select.addEventListener("click", () => {
+    select.classList.toggle("open");
+    optionsList.classList.toggle("open");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!container.contains(e.target)) {
+      select.classList.remove("open");
+      optionsList.classList.remove("open");
+    }
+  });
+}
+
+// Initialize selectors
+createCustomSelect(fromContainer, fromCurrency, (code) => fromCurrency = code);
+createCustomSelect(toContainer, toCurrency, (code) => toCurrency = code);
+
+// Swap currencies
+swapBtn.addEventListener("click", () => {
+  swapBtn.classList.add("rotating");
+  setTimeout(() => swapBtn.classList.remove("rotating"), 600);
+
+  [fromCurrency, toCurrency] = [toCurrency, fromCurrency];
+
+  createCustomSelect(fromContainer, fromCurrency, (code) => fromCurrency = code);
+  createCustomSelect(toContainer, toCurrency, (code) => toCurrency = code);
+});
+
+// Convert currency
+convertBtn.addEventListener("click", async () => {
+  const amount = parseFloat(amountInput.value);
+  if (isNaN(amount) || amount <= 0) {
+    resultDiv.textContent = "Please enter a valid amount.";
+    resultDiv.classList.add("error");
+    return;
+  }
+
+  resultDiv.textContent = "Converting...";
+  resultDiv.classList.remove("error");
+  resultDiv.classList.add("loading");
+
+  try {
+    const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromCurrency}`);
+    const data = await res.json();
+
+    if (!data.rates[toCurrency]) {
+      throw new Error("Invalid currency");
+    }
+
+    const rate = data.rates[toCurrency];
+    const converted = (amount * rate).toFixed(2);
+
+    resultDiv.textContent = `${amount} ${fromCurrency} = ${converted} ${toCurrency}`;
+    lastUpdatedDiv.textContent = `Exchange rate last updated: ${data.date}`;
+  } catch (err) {
+    resultDiv.textContent = "Error fetching exchange rate. Please try again.";
+    resultDiv.classList.add("error");
+  } finally {
+    resultDiv.classList.remove("loading");
+  }
+});
+</script>
+ </body> </html>
